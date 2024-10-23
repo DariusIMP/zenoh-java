@@ -16,7 +16,7 @@ class EncodingTest {
 
         // Testing non null schema
         var receivedSample: Sample? = null
-        val subscriber = session.declareSubscriber(keyExpr).with { sample ->
+        val subscriber = session.declareSubscriber(keyExpr).callback { sample ->
             receivedSample = sample
         }.res()
         var value = Value("test", Encoding(Encoding.ID.TEXT_CSV, "test_schema"))
@@ -51,7 +51,7 @@ class EncodingTest {
         val testValueA = Value("test", Encoding(Encoding.ID.TEXT_CSV, null))
         val testValueB = Value("test", Encoding(Encoding.ID.TEXT_CSV, "test_schema"))
 
-        val queryable = session.declareQueryable(keyExpr).with { query ->
+        val queryable = session.declareQueryable(keyExpr).callback { query ->
             when (query.keyExpr) {
                 test1 -> query.reply(query.keyExpr).success(testValueA).res()
                 test2 -> query.reply(query.keyExpr).success(testValueB).res()
@@ -97,7 +97,7 @@ class EncodingTest {
         val testValueA = Value("test", Encoding(Encoding.ID.TEXT_CSV, null))
         val testValueB = Value("test", Encoding(Encoding.ID.TEXT_CSV, "test_schema"))
 
-        val queryable = session.declareQueryable(keyExpr).with { query ->
+        val queryable = session.declareQueryable(keyExpr).callback { query ->
             when (query.keyExpr) {
                 test1 -> query.reply(query.keyExpr).error(testValueA).res()
                 test2 -> query.reply(query.keyExpr).error(testValueB).res()
@@ -140,7 +140,7 @@ class EncodingTest {
         val testValueB = Value("test", Encoding(Encoding.ID.TEXT_CSV, "test_schema"))
 
         var receivedValue: Value? = null
-        val queryable = session.declareQueryable(keyExpr).with { query ->
+        val queryable = session.declareQueryable(keyExpr).callback { query ->
             receivedValue = query.value
             query.close()
         }.res()

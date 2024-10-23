@@ -60,7 +60,7 @@ class QueryableTest {
         val sample = Sample(
             testKeyExpr, Value(testPayload), SampleKind.PUT, TimeStamp(Date.from(Instant.now())), QoS.default()
         )
-        val queryable = session.declareQueryable(testKeyExpr).with { query ->
+        val queryable = session.declareQueryable(testKeyExpr).callback { query ->
             query.reply(testKeyExpr).success(sample.value).timestamp(sample.timestamp!!).res()
         }.res()
 
@@ -103,7 +103,7 @@ class QueryableTest {
     @Test
     fun queryTest() {
         var receivedQuery: Query? = null
-        val queryable = session.declareQueryable(testKeyExpr).with { query -> receivedQuery = query }.res()
+        val queryable = session.declareQueryable(testKeyExpr).callback { query -> receivedQuery = query }.res()
 
         session.get(testKeyExpr).res()
 
@@ -116,7 +116,7 @@ class QueryableTest {
     @Test
     fun queryWithValueTest() {
         var receivedQuery: Query? = null
-        val queryable = session.declareQueryable(testKeyExpr).with { query -> receivedQuery = query }.res()
+        val queryable = session.declareQueryable(testKeyExpr).callback { query -> receivedQuery = query }.res()
 
         session.get(testKeyExpr).withValue("Test value").res()
 
@@ -133,7 +133,7 @@ class QueryableTest {
         val priority = Priority.DATA_HIGH
         val express = true
         val congestionControl = CongestionControl.DROP
-        val queryable = session.declareQueryable(testKeyExpr).with {
+        val queryable = session.declareQueryable(testKeyExpr).callback {
             it.use { query ->
                 query.reply(testKeyExpr).success(message).timestamp(timestamp).priority(priority).express(express)
                     .congestionControl(congestionControl).res()
@@ -157,7 +157,7 @@ class QueryableTest {
     @Test
     fun queryReplyErrorTest() {
         val message = "Error message"
-        val queryable = session.declareQueryable(testKeyExpr).with {
+        val queryable = session.declareQueryable(testKeyExpr).callback {
             it.use { query ->
                 query.reply(testKeyExpr).error(Value(message)).res()
             }
@@ -181,7 +181,7 @@ class QueryableTest {
         val priority = Priority.DATA_HIGH
         val express = true
         val congestionControl = CongestionControl.DROP
-        val queryable = session.declareQueryable(testKeyExpr).with {
+        val queryable = session.declareQueryable(testKeyExpr).callback {
             it.use { query ->
                 query.reply(testKeyExpr).delete().timestamp(timestamp).priority(priority).express(express)
                     .congestionControl(congestionControl).res()

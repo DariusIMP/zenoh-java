@@ -14,12 +14,17 @@
 
 package io.zenoh.query
 
-import io.zenoh.Resolvable
 import io.zenoh.ZenohType
-import io.zenoh.value.Value
 import io.zenoh.exceptions.ZError
 import io.zenoh.jni.JNIQuery
 import io.zenoh.keyexpr.KeyExpr
+import io.zenoh.bytes.Encoding
+import io.zenoh.qos.QoS
+import io.zenoh.sample.SampleKind
+import io.zenoh.bytes.IntoZBytes
+import io.zenoh.bytes.ZBytes
+import io.zenoh.sample.Sample
+import org.apache.commons.net.ntp.TimeStamp
 
 /**
  * Represents a Zenoh Query in Kotlin.
@@ -28,7 +33,8 @@ import io.zenoh.keyexpr.KeyExpr
  *
  * @property keyExpr The key expression to which the query is associated.
  * @property selector The selector
- * @property value Optional value in case the received query was declared using "with query".
+ * @property payload Optional payload in case the received query was declared using "with query".
+ * @property encoding Encoding of the [payload].
  * @property attachment Optional attachment.
  * @property jniQuery Delegate object in charge of communicating with the underlying native code.
  * @constructor Instances of Query objects are only meant to be created through the JNI upon receiving
@@ -37,8 +43,9 @@ import io.zenoh.keyexpr.KeyExpr
 class Query internal constructor(
     val keyExpr: KeyExpr,
     val selector: Selector,
-    val value: Value?,
-    val attachment: ByteArray?,
+    val payload: ZBytes?,
+    val encoding: Encoding?,
+    val attachment: ZBytes?,
     private var jniQuery: JNIQuery?
 ) : AutoCloseable, ZenohType {
 
@@ -46,51 +53,61 @@ class Query internal constructor(
     val parameters = selector.parameters
 
     /**
-     * Reply to the specified key expression.
+     * Reply success to the remote [Query].
+     *
+     * A query can not be replied more than once. After the reply is performed, the query is considered
+     * to be no more valid and further attempts to reply to it will fail.
      *
      * @param keyExpr Key expression to reply to. This parameter must not be necessarily the same
      * as the key expression from the Query, however it must intersect with the query key.
-     * @return a [Reply.Builder]
+     * @param payload The payload with the reply information.
      */
-    fun reply(keyExpr: KeyExpr) = Reply.Builder(this, keyExpr)
+    fun reply(
+        keyExpr: KeyExpr,
+        payload: IntoZBytes,
+    ): Reply.Builder {
+        return Reply.Builder(this, keyExpr, payload = payload.into(), SampleKind.PUT)
+    }
+
+    /**
+     * Reply error to the remote [Query].
+     *
+     * A query can not be replied more than once. After the reply is performed, the query is considered
+     * to be no more valid and further attempts to reply to it will fail.
+     *
+     * @param error The error information.
+     * @param encoding The encoding of the [error].
+     */
+    fun replyErr(error: IntoZBytes): Result<Unit> {
+        return jniQuery?.let {
+            val result = it.replyError(error, encoding)
+            jniQuery = null
+            result
+        } ?: Result.failure(ZError("Query is invalid"))
+    }
+
+    /**
+     * Perform a delete reply operation to the remote [Query].
+     *
+     * A query can not be replied more than once. After the reply is performed, the query is considered
+     * to be no more valid and further attempts to reply to it will fail.
+     *
+     * @param keyExpr Key expression to reply to. This parameter must not be necessarily the same
+     * as the key expression from the Query, however it must intersect with the query key.
+     * @param qos The [QoS] for the reply.
+     * @param timestamp Optional timestamp for the reply.
+     * @param attachment Optional attachment for the reply.
+     */
+    fun replyDel(
+        keyExpr: KeyExpr
+    ): Reply.Builder {
+        return Reply.Builder(this, keyExpr, payload = null, sampleKind = SampleKind.PUT)
+    }
 
     override fun close() {
         jniQuery?.apply {
             this.close()
             jniQuery = null
         }
-    }
-
-    @Suppress("removal")
-    protected fun finalize() {
-        close()
-    }
-
-    /**
-     * Perform a reply operation to the remote [Query].
-     *
-     * A query can not be replied more than once. After the reply is performed, the query is considered
-     * to be no more valid and further attempts to reply to it will fail.
-     *
-     * @param reply The [Reply] to the Query.
-     * @return A [Resolvable] that returns a [Result] with the status of the reply operation.
-     */
-    internal fun reply(reply: Reply): Resolvable<Unit> = Resolvable {
-        jniQuery?.apply {
-            val result = when (reply) {
-                is Reply.Success -> {
-                    replySuccess(reply.sample)
-                }
-                is Reply.Error -> {
-                    replyError(reply.error)
-                }
-                is Reply.Delete -> {
-                    replyDelete(reply.keyExpr, reply.timestamp, reply.attachment, reply.qos)
-                }
-            }
-            jniQuery = null
-            return@Resolvable result
-        }
-        throw(ZError("Query is invalid"))
     }
 }

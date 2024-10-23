@@ -16,7 +16,6 @@ package io.zenoh
 
 import io.zenoh.exceptions.ZError
 import io.zenoh.keyexpr.intoKeyExpr
-import io.zenoh.sample.Sample
 import kotlin.test.*
 
 class SessionTest {
@@ -58,8 +57,8 @@ class SessionTest {
         val session = Session.open()
         session.close()
         assertFailsWith<ZError> { session.declarePublisher(TEST_KEY_EXP).res() }
-        assertFailsWith<ZError> { session.declareSubscriber(TEST_KEY_EXP).with {}.res() }
-        assertFailsWith<ZError> { session.declareQueryable(TEST_KEY_EXP).with {}.res() }
+        assertFailsWith<ZError> { session.declareSubscriber(TEST_KEY_EXP).callback {}.res() }
+        assertFailsWith<ZError> { session.declareQueryable(TEST_KEY_EXP).callback {}.res() }
     }
 
 }

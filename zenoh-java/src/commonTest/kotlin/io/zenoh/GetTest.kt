@@ -43,7 +43,7 @@ class GetTest {
     fun setUp() {
         session = Session.open()
         keyExpr = "example/testing/keyexpr".intoKeyExpr()
-        queryable = session.declareQueryable(keyExpr).with { query ->
+        queryable = session.declareQueryable(keyExpr).callback { query ->
             query.reply(query.keyExpr)
                 .success(value)
                 .timestamp(timestamp)
@@ -88,7 +88,7 @@ class GetTest {
     @Test
     fun getWithSelectorParamsTest() {
         var receivedParams = String()
-        val queryable = session.declareQueryable(keyExpr).with {
+        val queryable = session.declareQueryable(keyExpr).callback {
             it.use { query ->
                 receivedParams = query.parameters
             }

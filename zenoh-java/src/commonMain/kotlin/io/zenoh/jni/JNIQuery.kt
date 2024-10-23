@@ -49,13 +49,12 @@ internal class JNIQuery(private val ptr: Long) {
         )
     }
 
-    @Throws(ZError::class)
-    fun replyError(error: IntoZBytes, encoding: Encoding) {
+    fun replyError(error: IntoZBytes, encoding: Encoding): Result<Unit> = runCatching {
         replyErrorViaJNI(ptr, error.into().bytes, encoding.id, encoding.schema)
     }
 
-    @Throws(ZError::class)
-    fun replyDelete(keyExpr: KeyExpr, timestamp: TimeStamp?, attachment: IntoZBytes?, qos: QoS) {
+    fun replyDelete(keyExpr: KeyExpr, timestamp: TimeStamp?, attachment: IntoZBytes?, qos: QoS): Result<Unit> =
+        runCatching {
             val timestampEnabled = timestamp != null
             replyDeleteViaJNI(
                 ptr,

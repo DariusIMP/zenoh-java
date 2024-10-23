@@ -28,7 +28,7 @@ class DeleteBuilderTest {
         val session = Session.open()
         var receivedSample: Sample? = null
         val keyExpr = "example/testing/keyexpr".intoKeyExpr()
-        val subscriber = session.declareSubscriber(keyExpr).with { sample -> receivedSample = sample }.res()
+        val subscriber = session.declareSubscriber(keyExpr).callback { sample -> receivedSample = sample }.res()
         session.delete(keyExpr).res()
         subscriber.close()
         keyExpr.close()

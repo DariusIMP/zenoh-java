@@ -60,7 +60,7 @@ class SubscriberTest {
     fun subscriber_runsWithCallback() {
         val receivedSamples = ArrayList<Sample>()
         val subscriber =
-            session.declareSubscriber(testKeyExpr).with { sample -> receivedSamples.add(sample) }.res()
+            session.declareSubscriber(testKeyExpr).callback { sample -> receivedSamples.add(sample) }.res()
 
         testValues.forEach { value ->
             session.put(testKeyExpr, value)
@@ -115,7 +115,7 @@ class SubscriberTest {
         val session = Session.open()
 
         val receivedSamples = ArrayList<Sample>()
-        val subscriber = session.declareSubscriber(keyExpr).with { sample -> receivedSamples.add(sample) }.res()
+        val subscriber = session.declareSubscriber(keyExpr).callback { sample -> receivedSamples.add(sample) }.res()
         testValues.forEach { value -> session.put(testKeyExpr, value).res() }
         subscriber.close()
 

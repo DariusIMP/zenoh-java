@@ -34,7 +34,7 @@ class PutBuilderTest {
         val session = Session.open()
         var receivedSample: Sample? = null
         val keyExpr = TEST_KEY_EXP.intoKeyExpr()
-        val subscriber = session.declareSubscriber(keyExpr).with { sample -> receivedSample = sample }.res()
+        val subscriber = session.declareSubscriber(keyExpr).callback { sample -> receivedSample = sample }.res()
         val value = Value(TEST_PAYLOAD.toByteArray(), Encoding(Encoding.ID.TEXT_PLAIN))
         session.put(keyExpr, value).res()
         subscriber.close()
